@@ -11,12 +11,11 @@ import (
 func countWords(line string, c chan int, wg *sync.WaitGroup) {
 	defer wg.Done()
 	words := strings.Fields(line)
-	fmt.Println("Processing line: ", line, " words = ", len(words))
 	c <- len(words)
 }
 
 func main() {
-	fmt.Println("Enter text (empty line to finish):")
+	fmt.Println("Enter text (Ctrl-D to finish typing):")
 	scanner := bufio.NewScanner(os.Stdin)
 	var input string
 	wordsChan := make(chan int)
@@ -48,8 +47,6 @@ func main() {
 	input = strings.TrimSpace(input)
 	charCount := len(input) - strings.Count(input, "\n")
 
-	fmt.Println("\nInput:")
-	fmt.Println(input)
 	fmt.Printf("\nTotal characters: %d\n", charCount)
 	fmt.Printf("Total words: %d\n", totalWords)
 	fmt.Printf("Total lines: %d\n", lineCount)
