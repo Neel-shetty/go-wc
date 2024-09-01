@@ -4,41 +4,54 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strings"
+	"sync"
 )
 
+func countWords(line string, c chan int, wg *sync.WaitGroup) {
+	defer wg.Done()
+	words := strings.Fields(line)
+	fmt.Println("Processing line: ", line, " words = ", len(words))
+	c <- len(words)
+}
+
 func main() {
-	fmt.Println("Enter a string")
+	fmt.Println("Enter text (empty line to finish):")
 	scanner := bufio.NewScanner(os.Stdin)
 	var input string
-	for scanner.Scan() {
-		line := scanner.Text()
-		if line == "" {
-			break
+	wordsChan := make(chan int)
+	lineCount := 0
+	var wg sync.WaitGroup
+
+	go func() {
+		for scanner.Scan() {
+			line := scanner.Text()
+			wg.Add(1)
+			go countWords(line, wordsChan, &wg)
+			input += line + "\n"
+			lineCount++
 		}
-		input += line + "\n"
-	}
-	fmt.Println("The input was:", input)
-	if err := scanner.Err(); err != nil {
-		fmt.Println("Error reading input:", err)
+		wg.Wait()
+		close(wordsChan)
+	}()
+
+	totalWords := 0
+	for wordCount := range wordsChan {
+		totalWords += wordCount
 	}
 
-	var numChars int
-	var numWords int
-	var numLines int
-	for i, c := range input {
-		fmt.Println(i, c)
-		if c == 10 {
-			numWords += 1
-			numLines += 1
-			continue
-		}
-		if c == 32 {
-			numWords += 1
-			continue
-		}
-		numChars += 1
+	if err := scanner.Err(); err != nil {
+		fmt.Println("Error reading input:", err)
+		return
 	}
-	fmt.Println("total chars:", numChars)
-	fmt.Println("total words:", numWords)
-	fmt.Println("total lines:", numLines)
+
+	input = strings.TrimSpace(input)
+	charCount := len(input) - strings.Count(input, "\n")
+
+	fmt.Println("\nInput:")
+	fmt.Println(input)
+	fmt.Printf("\nTotal characters: %d\n", charCount)
+	fmt.Printf("Total words: %d\n", totalWords)
+	fmt.Printf("Total lines: %d\n", lineCount)
 }
+
